@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  gateway:
+    image: nginx:alpine
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - alert-api
+      - anomaly-detector
+      - explanation-ai
+      - log-ingestor
+      - frontend
+
+  alert-api:
+    build:
+      context: ./services/alert-api
+    ports:
+      - "8001:8001"
+
+  anomaly-detector:
+    build:
+      context: ./services/anomaly-detector
+    ports:
+      - "8002:8002"
+
+  explanation-ai:
+    build:
+      context: ./services/explanation-ai
+    ports:
+      - "8003:8003"
+
+  log-ingestor:
+    build:
+      context: ./services/log-ingestor
+    ports:
+      - "8004:8004"
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
