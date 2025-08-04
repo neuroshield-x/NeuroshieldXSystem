@@ -8,5 +8,7 @@ def health():
 
 @app.post("/api/explain")
 def explain(alert: dict):
-    # Placeholder explanation logic
-    return {"explanation": "This is a mock explanation for the alert."}
+    message = alert.get("message", "")
+    return {
+        "explanation": f"This alert is likely due to suspicious log entry: '{message}'"
+    }
