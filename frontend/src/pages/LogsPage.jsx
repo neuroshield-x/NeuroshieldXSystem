@@ -9,7 +9,12 @@ const LogsPage = () => {
     fetch("/api/logs")
       .then((res) => res.json())
       .then((data) => {
-        setLogs(data);
+        if (Array.isArray(data)) {
+          setLogs(data);
+        } else {
+          console.error("Unexpected response:", data);
+          setLogs([]);
+        }
         setLoading(false);
       })
       .catch((err) => {

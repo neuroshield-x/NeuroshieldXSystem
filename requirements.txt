@@ -1,0 +1,22 @@
+# === General Python dependencies for all services ===
+fastapi==0.110.2
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+
+# === DB / SQL support ===
+sqlalchemy==2.0.30
+psycopg2-binary==2.9.9
+
+# === Async HTTP client ===
+httpx==0.27.0
+
+# === Kafka support ===
+aiokafka==0.10.0
+
+# === Logging, JSON, and utilities ===
+python-dotenv==1.0.1
+loguru==0.7.2
+
+# === Optional AI/ML (for future expansion) ===
+scikit-learn==1.5.0
+numpy==1.26.4

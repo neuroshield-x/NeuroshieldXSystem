@@ -25,6 +25,10 @@ services:
       context: ./services/anomaly-detector
     ports:
       - "8002:8002"
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_BROKER=kafka:9092
 
   explanation-ai:
     build:
@@ -37,9 +41,50 @@ services:
       context: ./services/log-ingestor
     ports:
       - "8004:8004"
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_BROKER=kafka:9092
 
   frontend:
     build:
       context: ./frontend
     ports:
       - "3000:3000"
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: kafka-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: bitnami/kafka:3.4.0
+    container_name: kafka-broker
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_ENABLE_KRAFT=no
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+  db:
+    image: postgres:15
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: neuro
+      POSTGRES_DB: alerts_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
