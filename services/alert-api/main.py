@@ -42,9 +42,14 @@ class AlertInput(BaseModel):
     timestamp: str
     message: str
 
+@app.get("/health")
+def health_noslash():
+    return {"status": "alert-api is running"}
+
 @app.get("/health/")
 def health():
     return {"status": "alert-api is running"}
+
 
 @app.post("/api/analyze/")
 async def analyze(alert_input: AlertInput):

@@ -1,10 +1,17 @@
-FROM python:3.10-alpine
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
+
+# curl is handy for in-container checks
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY main.py .
 
+EXPOSE 8003
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
