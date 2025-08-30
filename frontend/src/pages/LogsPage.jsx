@@ -1,4 +1,3 @@
-// src/pages/LogsPage.jsx
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Layout from "../components/Layout";
@@ -19,7 +18,6 @@ export default function LogsPage() {
         const data = await res.json();
         setLogs(Array.isArray(data) ? data : []);
       } catch {
-        // you can toast/log here if you want
       } finally {
         setLoading(false);
       }
@@ -62,7 +60,8 @@ export default function LogsPage() {
         ) : (
           <div className="table-responsive">
             <table className="table table-striped table-hover align-middle">
-              <thead className="table-light">
+              {/* removed table-light to avoid Bootstrap dark text */}
+              <thead>
                 <tr>
                   <th style={{ width: 60 }}>#</th>
                   <th style={{ width: 220 }}>Timestamp</th>
@@ -78,7 +77,7 @@ export default function LogsPage() {
                     <tr>
                       <td>{index + 1}</td>
                       <td className="text-monospace">{log.timestamp}</td>
-                      <td>{log.message}</td>
+                      <td className="wrap-normal">{log.message}</td>
                       <td className="text-end">
                         <button
                           className="btn btn-sm btn-primary"
@@ -110,7 +109,7 @@ export default function LogsPage() {
                               {errors[index]}
                             </div>
                           ) : (
-                            <div className="alert alert-secondary mb-0">
+                            <div className="alert alert-secondary mb-0 wrap-normal">
                               <strong>Explanation:</strong>{" "}
                               <span>{explanations[index]}</span>
                             </div>

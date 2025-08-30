@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import StatCard from "../components/StatCard";
 import TrafficArea from "../components/charts/TrafficArea";
@@ -13,7 +14,6 @@ export default function Dashboard() {
   });
   const [logs, setLogs] = useState([]);
 
-  // Poll health + logs every 15s
   useEffect(() => {
     const fetchAll = async () => {
       try {
@@ -46,7 +46,6 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, []);
 
-  // KPIs
   const kpis = useMemo(
     () => ({
       totalLogs: logs.length,
@@ -58,11 +57,10 @@ export default function Dashboard() {
     [logs]
   );
 
-  // Data for charts
   const areaData = useMemo(() => {
     const buckets = {};
     logs.forEach((l) => {
-      const t = (l.timestamp || "").slice(11, 16); // HH:MM
+      const t = (l.timestamp || "").slice(11, 16);
       buckets[t] = (buckets[t] || 0) + 1;
     });
     return Object.entries(buckets)
@@ -97,9 +95,16 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="mb-4">
-        <h1 className="h-title display-5">NeuroShield Operations Center</h1>
-        <div className="subtitle">AI-Powered SIEM that thinks ahead</div>
+      <div className="d-flex justify-content-between align-items-end mb-4">
+        <div>
+          <h1 className="h-title display-6 mb-1">NeuroShield Operations Center</h1>
+          <div className="subtitle">AI-Powered SIEM that thinks ahead</div>
+        </div>
+        <div>
+          <Link to="/logs" className="btn btn-primary btn-sm">
+            View Logs
+          </Link>
+        </div>
       </div>
 
       <div className="row g-3 mb-3">
@@ -108,6 +113,7 @@ export default function Dashboard() {
             label="Total Logs"
             value={kpis.totalLogs}
             trend={`Last 5m: ${kpis.last5m}`}
+            size="md"
           />
         </div>
         <div className="col-md-3">
@@ -115,6 +121,7 @@ export default function Dashboard() {
             label="Anomalies"
             value={kpis.anomalies}
             tone={kpis.anomalies ? "bad" : "good"}
+            size="md"
           />
         </div>
         <div className="col-md-2">
@@ -122,6 +129,8 @@ export default function Dashboard() {
             label="Alert API"
             value={health.alert}
             tone={health.alert === "running" ? "good" : "bad"}
+            size="xs"
+            clamp={false}  /* show full text; set true for 2-line clamp */
           />
         </div>
         <div className="col-md-2">
@@ -129,13 +138,17 @@ export default function Dashboard() {
             label="Detector"
             value={health.anomaly}
             tone={health.anomaly === "running" ? "good" : "bad"}
+            size="xs"
+            clamp={false}
           />
         </div>
         <div className="col-md-2">
           <StatCard
             label="Explain AI"
             value={health.explain}
-            tone={health.explain === "explanation-ai is running" ? "good" : "bad"}
+            tone={/running/i.test(health.explain) ? "good" : "bad"}
+            size="xs"
+            clamp={false}
           />
         </div>
       </div>
