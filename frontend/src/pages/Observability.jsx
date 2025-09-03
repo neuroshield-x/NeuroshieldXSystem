@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Layout from "../components/Layout";
 import SeverityPie from "../components/charts/SeverityPie";
 import TrafficArea from "../components/charts/TrafficArea";
@@ -19,24 +19,46 @@ function normalizeSeverity(l) {
 
 export default function Observability() {
   const [logs, setLogs] = useState([]);
+  const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState("");
+  const tableEndRef = useRef(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/logs?severity=all&limit=500");
+        const res = await fetch("/api/logs");
         const data = await res.json();
-        setLogs(Array.isArray(data) ? data : []);
+        setLogs(Array.isArray(data) ? data.slice(-500) : []);
       } catch (e) {
         console.error("Failed to load logs", e);
       }
     };
     load();
-    const id = setInterval(load, 15000);
+    const id = setInterval(load, 5000);
     return () => clearInterval(id);
   }, []);
 
+  // Auto-scroll to newest
+  useEffect(() => {
+    if (tableEndRef.current) {
+      tableEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logs]);
+
+  const filtered = useMemo(() => {
+    return logs.filter((l) => {
+      const s = normalizeSeverity(l);
+      const matchSeverity = filter === "all" || s === filter;
+      const matchQuery =
+        query === "" || (l.message || "").toLowerCase().includes(query.toLowerCase());
+      return matchSeverity && matchQuery;
+    });
+  }, [logs, filter, query]);
+
   const sevData = useMemo(() => {
-    let low = 0, med = 0, hi = 0;
+    let low = 0,
+      med = 0,
+      hi = 0;
     logs.forEach((l) => {
       const s = normalizeSeverity(l);
       if (s === "low") low++;
@@ -56,7 +78,9 @@ export default function Observability() {
       const t = (l.timestamp || "").slice(11, 16);
       buckets[t] = (buckets[t] || 0) + 1;
     });
-    return Object.entries(buckets).slice(-12).map(([t, count]) => ({ t, count }));
+    return Object.entries(buckets)
+      .slice(-12)
+      .map(([t, count]) => ({ t, count }));
   }, [logs]);
 
   const timeline = useMemo(() => {
@@ -68,14 +92,16 @@ export default function Observability() {
         buckets[t] = (buckets[t] || 0) + 1;
       }
     });
-    return Object.entries(buckets).slice(-12).map(([t, alerts]) => ({ t, alerts }));
+    return Object.entries(buckets)
+      .slice(-12)
+      .map(([t, alerts]) => ({ t, alerts }));
   }, [logs]);
 
   return (
     <Layout>
       <h1 className="h-title mb-3">Observability</h1>
 
-      <div className="row g-3">
+      <div className="row g-3 mb-4">
         <div className="col-lg-4">
           <SeverityPie data={sevData} />
         </div>
@@ -87,8 +113,72 @@ export default function Observability() {
         </div>
       </div>
 
-      <div className="subtitle mt-3">
-        Live view of system logs and severities. Data updates every 15 seconds.
+      <div className="subtitle mb-3">
+        Live view of system logs and severities. Data updates every 5 seconds.
+      </div>
+
+      {/* Filters */}
+      <div className="d-flex gap-2 mb-3">
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="form-select w-auto"
+        >
+          <option value="all">All Severities</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+        <input
+          type="text"
+          placeholder="Search logs..."
+          className="form-control"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {/* Log table */}
+      <div
+        className="card-glass p-3"
+        style={{ maxHeight: "60vh", overflow: "auto", backgroundColor: "black", color: "white" }}
+      >
+        <table className="table table-sm table-dark">
+          <thead className="sticky-top" style={{ backgroundColor: "black", color: "white" }}>
+            <tr>
+              <th style={{ width: "20%" }}>Timestamp</th>
+              <th style={{ width: "65%" }}>Message</th>
+              <th style={{ width: "15%" }}>Severity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.slice(-200).map((l, i) => {
+              const sev = normalizeSeverity(l);
+              return (
+                <tr key={i}>
+                  <td className="text-monospace">{l.timestamp}</td>
+                  <td>{l.message}</td>
+                  <td>
+                    <span
+                      className={`badge ${
+                        sev === "high"
+                          ? "bg-danger"
+                          : sev === "medium"
+                          ? "bg-warning text-dark"
+                          : sev === "low"
+                          ? "bg-success"
+                          : "bg-secondary"
+                      }`}
+                    >
+                      {sev}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+            <tr ref={tableEndRef}></tr>
+          </tbody>
+        </table>
       </div>
     </Layout>
   );
