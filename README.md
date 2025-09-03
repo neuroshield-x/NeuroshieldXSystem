@@ -178,17 +178,57 @@ curl -X POST http://localhost/api/ingest/ \
 ## Project Structure
 ```
 neuroshield-x/
-├── docker-compose.yml
-├── gateway/               # NGINX reverse proxy config
-├── frontend/              # React dashboard
-│   └── src/pages/         # Dashboard.jsx, Observability.jsx, etc.
-├── services/
-│   ├── log-ingestor/      # FastAPI + Kafka producer
-│   ├── log-fetcher/       # mock generator (main.py)
-│   ├── anomaly-detector/  # Kafka consumer + alert forwarder
-│   ├── alert-api/         # Alerts storage / API
-│   └── explanation-ai/    # AI explanation service
-└── db/                    # Postgres (optional)
+├── docker-compose.yml          # Orchestrates all services
+├── requirements.txt            # Top-level Python deps (optional)
+├── package.json                # Root NPM deps (optional)
+├── gateway/                    # NGINX reverse proxy
+│   └── nginx.conf              # Routes /api/* to backend services
+├── frontend/                   # React dashboard (UI)
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── public/
+│   │   ├── index.html
+│   │   ├── theme.css
+│   │   └── bg-control-room.jpg
+│   └── src/
+│       ├── App.js
+│       ├── index.js
+│       ├── components/
+│       │   ├── Layout.jsx
+│       │   ├── StatCard.jsx
+│       │   └── charts/
+│       │       ├── SeverityPie.jsx
+│       │       ├── TrafficArea.jsx
+│       │       └── AlertTimeline.jsx
+│       └── pages/
+│           ├── Dashboard.jsx
+│           ├── Observability.jsx
+│           ├── LogsPage.jsx
+│           └── LandingPage.jsx
+├── services/                   # Backend microservices
+│   ├── log-ingestor/           # Ingest logs + expose /api/logs
+│   │   ├── Dockerfile
+│   │   ├── main.py
+│   │   └── requirements.txt
+│   ├── log-fetcher/            # Mock log generator (producer)
+│   │   ├── Dockerfile
+│   │   ├── main.py
+│   │   └── requirements.txt
+│   ├── anomaly-detector/       # Kafka consumer + anomaly detection
+│   │   ├── Dockerfile
+│   │   ├── main.py
+│   │   └── requirements.txt
+│   ├── alert-api/              # Alert management API (uses DB)
+│   │   ├── Dockerfile
+│   │   ├── main.py
+│   │   └── requirements.txt
+│   └── explanation-ai/         # AI explanation service (Groq LLM)
+│       ├── Dockerfile
+│       ├── main.py
+│       └── requirements.txt
+└── db/                         # Postgres (optional, for alert-api)
+    └── (data volume mounted here)
+
 ```
 
 ---
@@ -202,6 +242,7 @@ neuroshield-x/
 ---
 ## 📜 License
 MIT License – feel free to fork and adapt for your own learning projects.
+
 
 
 
