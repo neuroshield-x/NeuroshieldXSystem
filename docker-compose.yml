@@ -50,7 +50,7 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       kafka:
-        condition: service_started   # ✅ simplified, no “unhealthy” blocking
+        condition: service_started  
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8002/health || curl -sf http://localhost:8002/health"]
       interval: 15s
@@ -65,7 +65,7 @@ services:
     ports:
       - "8003:8003"
     env_file:
-      - .env         # expects GROQ_API_KEY (+ optional GROQ_MODEL)
+      - .env         # expects GROQ_API_KEY 
     environment:
       - PYTHONUNBUFFERED=1
     healthcheck:
@@ -87,7 +87,7 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       kafka:
-        condition: service_started   # ✅ simplified
+        condition: service_started  
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8004/api/ingest/health || curl -sf http://localhost:8004/api/ingest/health"]
       interval: 10s
@@ -130,7 +130,7 @@ services:
       - "2181:2181"
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
-    # ✅ removed healthcheck using `nc` (not present in the image)
+   
 
   kafka:
     image: bitnami/kafka:3.4.0
@@ -147,8 +147,7 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
-    # ✅ removed Kafka healthcheck too (optional, avoids blocking)
-
+   
   db:
     image: postgres:15
     restart: unless-stopped
