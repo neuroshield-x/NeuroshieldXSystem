@@ -1,11 +1,17 @@
+# services/log-fetcher/Dockerfile
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
 WORKDIR /app
-COPY mock_fetcher.py /app/
 
-RUN pip install --no-cache-dir requests
+# Install deps
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "mock_fetcher.py"]
+# Copy the (renamed) entrypoint
+COPY main.py /app/
+
+# Helpful for logs
+ENV PYTHONUNBUFFERED=1
+
+# Run the generator (no web server needed)
+CMD ["python", "-u", "main.py"]

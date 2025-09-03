@@ -1,3 +1,4 @@
+// frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -5,6 +6,30 @@ import StatCard from "../components/StatCard";
 import TrafficArea from "../components/charts/TrafficArea";
 import SeverityPie from "../components/charts/SeverityPie";
 import AlertTimeline from "../components/charts/AlertTimeline";
+
+// Normalize into: 'low' | 'medium' | 'high' | 'none'
+function normalizeSeverity(l) {
+  const raw = String(l.severity ?? "").trim().toLowerCase();
+  if (["low", "info", "debug", "trace"].includes(raw)) return "low";
+  if (["medium", "med", "warn", "warning", "notice"].includes(raw)) return "medium";
+  if (["high", "error", "critical", "fatal", "anomaly", "alert"].includes(raw)) return "high";
+
+  const msg = l.message || "";
+
+  // explicit token: severity=LOW / severity: medium
+  const m = /severity\s*[:=]\s*(low|medium|med|high)/i.exec(msg);
+  if (m) {
+    const v = m[1].toLowerCase();
+    return v === "med" ? "medium" : v;
+  }
+
+  // keyword-based inference
+  if (/(fatal|critical|anomaly|fail|failure|error|🔥)/i.test(msg)) return "high";
+  if (/(warn|warning|degraded|retry)/i.test(msg)) return "medium";
+  if (/(ok|success|login|stable|info|debug|memory usage|disk usage)/i.test(msg)) return "low";
+
+  return "none";
+}
 
 export default function Dashboard() {
   const [health, setHealth] = useState({
@@ -37,6 +62,7 @@ export default function Dashboard() {
       try {
         const r = await fetch("/api/logs");
         const js = await r.json();
+        // keep the latest ~200
         setLogs(Array.isArray(js) ? js.slice(-200) : []);
       } catch {}
     };
@@ -46,16 +72,14 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, []);
 
-  const kpis = useMemo(
-    () => ({
+  const kpis = useMemo(() => {
+    const anomalies = logs.filter((l) => normalizeSeverity(l) === "high").length;
+    return {
       totalLogs: logs.length,
-      anomalies: logs.filter((l) =>
-        /anomaly|error|fail|threat/i.test(l.message)
-      ).length,
+      anomalies,
       last5m: logs.slice(-50).length,
-    }),
-    [logs]
-  );
+    };
+  }, [logs]);
 
   const areaData = useMemo(() => {
     const buckets = {};
@@ -69,11 +93,13 @@ export default function Dashboard() {
   }, [logs]);
 
   const sevData = useMemo(() => {
-    const low = logs.filter((l) => /info|low/i.test(l.message)).length;
-    const med = logs.filter((l) => /warn|medium/i.test(l.message)).length;
-    const hi = logs.filter((l) =>
-      /error|critical|high|anomaly/i.test(l.message)
-    ).length;
+    let low = 0, med = 0, hi = 0;
+    logs.forEach((l) => {
+      const s = normalizeSeverity(l);
+      if (s === "low") low += 1;
+      else if (s === "medium") med += 1;
+      else if (s === "high") hi += 1;
+    });
     return [
       { name: "Low", value: low },
       { name: "Medium", value: med },
@@ -85,8 +111,10 @@ export default function Dashboard() {
     const buckets = {};
     logs.forEach((l) => {
       const t = (l.timestamp || "").slice(11, 16);
-      const isAlert = /error|critical|anomaly|fail/i.test(l.message);
-      buckets[t] = (buckets[t] || 0) + (isAlert ? 1 : 0);
+      const s = normalizeSeverity(l);
+      // Count any log that has a recognized severity
+      const isAlertish = s === "low" || s === "medium" || s === "high";
+      buckets[t] = (buckets[t] || 0) + (isAlertish ? 1 : 0);
     });
     return Object.entries(buckets)
       .slice(-12)
@@ -130,7 +158,7 @@ export default function Dashboard() {
             value={health.alert}
             tone={health.alert === "running" ? "good" : "bad"}
             size="xs"
-            clamp={false}  /* show full text; set true for 2-line clamp */
+            clamp={false}
           />
         </div>
         <div className="col-md-2">
@@ -182,6 +210,9 @@ export default function Dashboard() {
                 >
                   <span className="text-monospace me-3">{l.timestamp}</span>
                   <span className="flex-grow-1">{l.message}</span>
+                  <span className="ms-3 badge bg-secondary">
+                    {normalizeSeverity(l)}
+                  </span>
                 </li>
               ))}
           </ul>

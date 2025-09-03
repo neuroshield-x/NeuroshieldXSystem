@@ -8,16 +8,19 @@ from datetime import datetime
 INGEST_URL = os.getenv("INGEST_URL", "http://log-ingestor:8004/api/ingest/")
 FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL", "5"))
 
+# services/log-fetcher/mock_fetcher.py
+
 MESSAGES = [
-    "User login successful",
-    "Disk usage at 75%",
-    "🔥 error: CPU overload detected",
-    "Unauthorized access error in firewall logs",
-    "Memory usage stable at 60%",
-    "error: database connection timeout",
-    "New admin user created",
-    "Firewall blocked suspicious IP 192.168.1.50"
+    "severity=LOW User login successful",
+    "severity=LOW New admin user created",
+    "severity=LOW Memory usage stable at 60%",
+    "severity=MEDIUM Disk usage at 85%",
+    "severity=MEDIUM Firewall blocked suspicious IP 192.168.1.50",
+    "severity=MEDIUM Unauthorized access attempt in firewall logs",
+    "severity=HIGH 🔥 error: CPU overload detected",
+    "severity=HIGH error: database connection timeout"
 ]
+
 
 def now_iso() -> str:
     return datetime.utcnow().isoformat()
@@ -31,14 +34,14 @@ def send_to_log_ingestor(payload: dict):
 
 def loop():
     print(f"▶️ mock-fetcher starting | INGEST_URL={INGEST_URL} | INTERVAL={FETCH_INTERVAL}s")
+    i = 0
     while True:
-        msg = random.choice(MESSAGES)
-        payload = {
-            "timestamp": now_iso(),
-            "message": msg
-        }
+        msg = MESSAGES[i % len(MESSAGES)]
+        i += 1
+        payload = {"timestamp": now_iso(), "message": msg}
         send_to_log_ingestor(payload)
         time.sleep(FETCH_INTERVAL)
+
 
 if __name__ == "__main__":
     loop()

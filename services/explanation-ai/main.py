@@ -16,9 +16,11 @@ class AlertInput(BaseModel):
     timestamp: str
     message: str
 
-# ---------- Groq client ----------
+# ---------- Groq client & models ----------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-MODEL_ID = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")  # ✅ safer default
+PREFERRED_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.1-8b-instant")
+
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 SYSTEM_PROMPT = """You are a SOC analyst. Given a single log line, write:
@@ -29,10 +31,20 @@ SYSTEM_PROMPT = """You are a SOC analyst. Given a single log line, write:
 Be concise, actionable, and avoid generic fluff. If the message is benign, say so and explain why.
 """
 
+def call_groq(model_id: str, content: str):
+    return client.chat.completions.create(
+        model=model_id,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": content},
+        ],
+        temperature=0.2,
+        max_tokens=300,   # reduced to save quota
+    )
+
 @app.post("/api/explain/")
 async def explain(alert: AlertInput):
     if not client:
-        # Fallback so the UI still shows something useful if key is missing
         return {
             "explanation": (
                 f"[LOCAL FALLBACK] No GROQ_API_KEY configured. "
@@ -45,30 +57,31 @@ async def explain(alert: AlertInput):
             ],
         }
 
+    content = f"Timestamp: {alert.timestamp}\nMessage: {alert.message}"
     try:
-        print(f"[EXPLAIN-AI] Explaining: {alert.message}")
-
-        completion = client.chat.completions.create(
-            model=MODEL_ID,   # ✅ updated model
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": f"Timestamp: {alert.timestamp}\nMessage: {alert.message}"}
-            ],
-            temperature=0.2,
-            max_tokens=400,
-        )
-
-        text = completion.choices[0].message.content.strip()
-
-        return {"explanation": text}
+        print(f"[EXPLAIN-AI] Explaining with {PREFERRED_MODEL}: {alert.message}")
+        resp = call_groq(PREFERRED_MODEL, content)
+        text = resp.choices[0].message.content.strip()
+        return {"explanation": text, "model_used": PREFERRED_MODEL}
 
     except Exception as e:
-        # Never bubble raw errors to frontend; include them in payload
+        msg = str(e)
+        print(f"[EXPLAIN-AI][ERROR] {msg}", flush=True)
+
+        # If rate limited, try fallback
+        if "rate_limit" in msg or "429" in msg:
+            try:
+                print(f"[EXPLAIN-AI] Falling back to {FALLBACK_MODEL}")
+                resp = call_groq(FALLBACK_MODEL, content)
+                text = resp.choices[0].message.content.strip()
+                return {"explanation": text, "model_used": FALLBACK_MODEL}
+            except Exception as e2:
+                print(f"[EXPLAIN-AI][ERROR fallback] {e2}", flush=True)
+
         return {
             "explanation": (
-                "The AI explanation service encountered an error while processing this log. "
-                "Please check the explanation-ai container logs."
+                "AI explanation temporarily unavailable (provider error or rate limit)."
             ),
-            "error": str(e),
-            "model": MODEL_ID,
+            "error": msg,
+            "model": PREFERRED_MODEL,
         }
