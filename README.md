@@ -33,29 +33,66 @@ Traditional SIEM tools flood analysts with technical alerts that lack context an
 ```bash
 git clone [(https://github.com/neuroshield-x/NeuroshieldXSystem.git)]
 cd neuroshield-x
+```
+
+### 2. Environment variables
+
+in .env  fill in values as needed (e.g. GROQ_API_KEY if you want Explanation-AI to work).
+
+### 3. Build and start with Docker Compose
+```bash
 docker compose up --build
 ```
 
-### 2.Services
+This will launch:
+- gateway (NGINX reverse proxy) → http://localhost
+- frontend (React dashboard) → proxied through gateway
+- log-ingestor (FastAPI + Kafka producer) → http://localhost:8004/api/ingest
+- log-fetcher (mock log generator) → runs automatically
+- anomaly-detector (FastAPI Kafka consumer) → http://localhost:8002/health
+- alert-api (FastAPI, optional DB) → http://localhost:8001/health
+- explanation-ai (FastAPI wrapper for Groq LLM) → http://localhost:8003/health
+- kafka + zookeeper (messaging backbone)
+- postgres (optional DB for alert-api, can be ignored if you don’t need storage)
 
-- Frontend: http://localhost (React dashboard)
-- Gateway: http://localhost/api/
-- Log Ingestor: http://localhost:8004/api/ingest
-- Anomaly Detector: http://localhost:8002/health
-- Alert API: http://localhost:8001/health
-- Explanation AI: http://localhost:8003/health
-- Kafka Broker: localhost:9092
+### 4. Verify containers are healthy
+```bash
+docker compose ps
+```
 
-### 3. Generate logs
-log-fetcher service continuously sends logs. You can also inject manually:
+### 5. Open the dashboard
+
+Navigate to:
+👉 http://localhost
+Dashboard page: overview of anomalies, severity pie, activity timeline.
+logs page: all logs with AI explanation
+Observability page: live log explorer with search, filters, and export.
+
+### 6. Check health endpoints (optional)
+```bash
+curl http://localhost/api/ingest/health
+curl http://localhost/api/anomaly/health
+curl http://localhost/api/explain/health
+```
+### 7. Manually ingest a log
 ```bash
 curl -X POST http://localhost/api/ingest/ \
   -H "Content-Type: application/json" \
   -d '{"timestamp":"2025-09-03T10:00:00Z","message":"severity=MEDIUM Disk usage at 85%"}'
 ```
 
----
+It will flow through:
+log-ingestor → Kafka → anomaly-detector → alert-api and appear on the dashboard.
 
+
+### 8. Generate logs
+log-fetcher service continuously sends logs. You can also inject manually:
+```bash
+curl -X POST http://localhost/api/ingest/ \
+  -H "Content-Type: application/json" \
+  -d '{"timestamp":"2025-09-03T10:00:00Z","message":"severity=MEDIUM Disk usage at 85%"}'
+```
+---
 
 ## Features
 
@@ -115,6 +152,18 @@ curl -X POST http://localhost/api/ingest/ \
 
 ```
 ---
+## Services
+
+- Frontend: http://localhost (React dashboard)
+- Gateway: http://localhost/api/
+- Log Ingestor: http://localhost:8004/api/ingest
+- Anomaly Detector: http://localhost:8002/health
+- Alert API: http://localhost:8001/health
+- Explanation AI: http://localhost:8003/health
+- Kafka Broker: localhost:9092
+
+--- 
+
 ## ⚙️ Tech Stack
 
 - **Backend:** FastAPI (Python)
@@ -153,6 +202,7 @@ neuroshield-x/
 ---
 ## 📜 License
 MIT License – feel free to fork and adapt for your own learning projects.
+
 
 
 
