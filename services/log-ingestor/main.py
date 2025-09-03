@@ -13,15 +13,15 @@ app = FastAPI()
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "kafka:9092")
 KAFKA_TOPIC = "logs-topic"
 
-# ✅ buffer to store recent logs for dashboard
+# buffer to store recent logs for dashboard
 BUFFER = deque(maxlen=500)
 
-# ✅ Input model
+#  Input model
 class LogInput(BaseModel):
     timestamp: str
     message: str
 
-# ✅ Kafka connection with retry logic
+# Kafka connection with retry logic
 def connect_to_kafka():
     max_retries = 10
     for attempt in range(max_retries):
@@ -40,12 +40,12 @@ def connect_to_kafka():
 
 producer = connect_to_kafka()
 
-# ✅ Health check
+#  Health check
 @app.get("/api/ingest/health")
 def health():
     return {"status": "log-ingestor is running"}
 
-# ✅ POST endpoint for manual log ingestion
+#  POST endpoint for manual log ingestion
 @app.post("/api/ingest/")
 async def ingest(log: LogInput):
     if not producer:
@@ -61,7 +61,7 @@ async def ingest(log: LogInput):
         print(f"❌ Failed to send to Kafka: {str(e)}")
         return {"error": f"Failed to send to Kafka: {str(e)}"}
 
-# ✅ Auto-generate logs for testing
+# Auto-generate logs for testing
 def auto_log_generator():
     messages = [
         "severity=LOW User login successful",
@@ -83,7 +83,7 @@ def auto_log_generator():
             BUFFER.append(log_data)  # also store auto logs
             print(f"[🧪AUTO] Sent log to Kafka: {log_data}")
 
-# ✅ Serve buffered logs for dashboard
+# Serve buffered logs for dashboard
 @app.get("/api/logs")
 def get_logs():
     return list(BUFFER)
