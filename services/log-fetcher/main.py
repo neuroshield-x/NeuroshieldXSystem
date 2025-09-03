@@ -8,7 +8,7 @@ from datetime import datetime
 INGEST_URL = os.getenv("INGEST_URL", "http://log-ingestor:8004/api/ingest/")
 FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL", "5"))
 
-# services/log-fetcher/mock_fetcher.py
+
 
 MESSAGES = [
     "severity=LOW User login successful",
