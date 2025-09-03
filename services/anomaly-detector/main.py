@@ -14,7 +14,7 @@ app = FastAPI()
 KAFKA_TOPIC = "logs-topic"
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "kafka:9092")
 
-# ✅ Anomaly detection logic
+# Anomaly detection logic
 async def handle_log(log: dict):
     is_anomaly = "error" in log.get("message", "").lower()
 
@@ -33,7 +33,7 @@ async def handle_log(log: dict):
     else:
         print(f"[i] Log not flagged as anomaly: {log['message']}")
 
-# ✅ Kafka consumer on a separate thread
+#  Kafka consumer on a separate thread
 def start_kafka_consumer():
     print("🔄 Starting Kafka consumer for anomaly detection...")
     retries = 0
@@ -68,18 +68,18 @@ def start_kafka_consumer():
         print(f"[📥] Received log: {log}")
         loop.run_until_complete(handle_log(log))
 
-# ✅ Run Kafka consumer on startup
+#  Run Kafka consumer on startup
 @app.on_event("startup")
 def startup_event():
     thread = threading.Thread(target=start_kafka_consumer, daemon=True)
     thread.start()
 
-# ✅ Health check
+#  Health check
 @app.get("/health")
 def health():
     return {"status": "anomaly-detector is running"}
 
-# ✅ Manual log analyzer for testing
+#  Manual log analyzer for testing
 @app.post("/api/analyze/")
 async def analyze(log: dict):
     await handle_log(log)
