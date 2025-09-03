@@ -26,14 +26,12 @@ Traditional SIEM tools flood analysts with technical alerts that lack context an
 - Real-time log ingestion and display  
 - AI-generated **natural-language alerts**  
 - Clear **recommendations** for action  
-- Simulated log activity for PoC testing  
-
 ---
 ## ⚡ Quickstart
 
 ### 1. Clone & build
 ```bash
-git clone https://github.com/yourusername/neuroshield-x.git
+git clone [(https://github.com/neuroshield-x/NeuroshieldXSystem.git)]
 cd neuroshield-x
 docker compose up --build
 ```
@@ -41,7 +39,7 @@ docker compose up --build
 ### 2.Services
 
 - Frontend: http://localhost (React dashboard)
-- Gateway: http://localhost/api/*
+- Gateway: http://localhost/api/
 - Log Ingestor: http://localhost:8004/api/ingest
 - Anomaly Detector: http://localhost:8002/health
 - Alert API: http://localhost:8001/health
@@ -81,29 +79,8 @@ curl -X POST http://localhost/api/ingest/ \
 
 ## 🧠 Architecture
 
-<img width="955" alt="architecture" src="https://github.com/user-attachments/assets/cda43871-0328-4b3b-90ba-7b8df61b5817" />
+<img width="768" height="191" alt="neuroshieldx_architecture" src="https://github.com/user-attachments/assets/1e1a102c-a40f-4a4a-acd0-aaca22e2bcd4" />
 
-[ producer.py ] ---> POST /analyze (FastAPI) ---> [ stored logs / generated alerts ]
-↘
-/api/logs
-/api/detect
-↘
-[ React UI ]
-
----
-## ⚙️ Tech Stack
-
-- **Backend:** FastAPI (Python)
-- **Frontend:** React + Recharts + Bootstrap
-- **Messaging:** Apache Kafka (Bitnami image)
-- **Gateway:** NGINX reverse proxy
-- **Database:** PostgreSQL (optional, only for Alert API)
-- **AI Integration:** Groq LLM for explanations
-- **Deployment:** Docker Compos
----
-## 📐 Architecture Diagram
-
-Here’s a clean diagram version
 
 ```plaintext
                        ┌──────────────┐
@@ -137,6 +114,18 @@ Here’s a clean diagram version
  main.py (log generator)
 
 ```
+---
+## ⚙️ Tech Stack
+
+- **Backend:** FastAPI (Python)
+- **Frontend:** React + Recharts + Bootstrap
+- **Messaging:** Apache Kafka (Bitnami image)
+- **Gateway:** NGINX reverse proxy
+- **Database:** PostgreSQL (optional, only for Alert API)
+- **AI Integration:** Groq LLM for explanations
+- **Deployment:** Docker Compos
+---
+
 ## Project Structure
 ```
 neuroshield-x/
@@ -164,5 +153,6 @@ neuroshield-x/
 ---
 ## 📜 License
 MIT License – feel free to fork and adapt for your own learning projects.
+
 
 
